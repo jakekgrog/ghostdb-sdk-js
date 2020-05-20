@@ -1,6 +1,6 @@
-# GhostDB SDK for Node.JS
+# GhostDB SDK for Node.js
 
-The GhostDB SDK for Node.JS allows Node.JS developers to write software that makes use of the [GhostDB](https://www.github.com/ghostdb/ghostdb-cache-node) distributed caching system.
+The GhostDB SDK for Node.js allows Node.js developers to write software that makes use of the [GhostDB](https://www.github.com/ghostdb/ghostdb-cache-node) distributed caching system.
 
 ## Installation
 
