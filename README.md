@@ -1,3 +1,5 @@
+> The original repository can be found here - [Original GhostDB Repo](https://github.com/jakekgrog/GhostDB)
+
 # GhostDB SDK for Node.js
 
 The GhostDB SDK for Node.js allows Node.js developers to write software that makes use of the [GhostDB](https://www.github.com/ghostdb/ghostdb-cache-node) distributed caching system.
