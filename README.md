@@ -2,6 +2,35 @@
 
 The GhostDB SDK for Node.js allows Node.js developers to write software that makes use of the [GhostDB](https://www.github.com/ghostdb/ghostdb-cache-node) distributed caching system.
 
+## Example Usage
+
+```javascript
+var gdb = require('ghost-db-sdk');
+
+var cache = new gdb(path.resolve(__dirname, 'node.conf'));
+
+async function getStockData(tickerSmbl):
+    // Fetch data from cache
+    stockData = await cache.get(tickerSmbl)
+
+    if (stockData.Value == "CACHE_MISS") {
+        // Fetch from your database (MongoDB, MySQL etc.)
+        // After any processing, we can 
+        // assume our computed value is stored in
+        // a variable called stockData
+    
+        // Store result in cache. We do not need to await here.
+        // However if it is essential that data is cached
+        // you can wait for a response telling you if data
+        // has been cached or not.
+        cache.put(tickerSmbl, stockData)
+    
+    return stockData
+
+return getStockData("AMZN")
+
+```
+
 ## Installation
 
 The GhostDB SDK for Node.js can be installed using npm at the command line:
