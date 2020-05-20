@@ -5,13 +5,14 @@ The GhostDB SDK for Node.js allows Node.js developers to write software that mak
 ## Example Usage
 
 ```javascript
+var path = require('path');
 var gdb = require('ghost-db-sdk');
 
 var cache = new gdb(path.resolve(__dirname, 'node.conf'));
 
-async function getStockData(tickerSmbl):
+async function getStockData(tickerSmbl) {
     // Fetch data from cache
-    stockData = await cache.get(tickerSmbl)
+    stockData = await cache.get(tickerSmbl);
 
     if (stockData.Value == "CACHE_MISS") {
         // Fetch from your database (MongoDB, MySQL etc.)
@@ -23,9 +24,10 @@ async function getStockData(tickerSmbl):
         // However if it is essential that data is cached
         // you can wait for a response telling you if data
         // has been cached or not.
-        cache.put(tickerSmbl, stockData)
-    
+        cache.put(tickerSmbl, stockData);
+    }
     return stockData
+}
 
 return getStockData("AMZN")
 
