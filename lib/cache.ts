@@ -24,6 +24,7 @@ const API_ENDPOINTS: Record<string, string> = {
     'flush': '/flush',
     'getSnitchMetrics': '/getSnitchMetrics',
     'getWatchdogMetrics': '/getWatchdogMetrics',
+    'nodeSize': '/nodeSize',
 };
 
 class Cache {
@@ -71,6 +72,27 @@ class Cache {
             this.deadServers.add(node.value.ip);
             this.ring.delete(node.value.ip);
             return this.get(key);
+        });
+    }
+
+    /**
+     * Gets the number of entries in the cache of a given node
+     * 
+     * @param {string} ip - The IP address of the node
+     * @return {Promise<RequestPromise>} The promise
+     */
+    async nodeSize(ip: string): Promise<RequestPromise> {
+        const node: Pair = this.ring.getPoint(ip);
+        if (_.isNil(node)) {
+            throw new GhostNoMoreServersError();
+        }
+
+        const requestObject: CacheRequest = buildCacheRequestObj({ ip });
+        const options = this._buildOptionsForRequest("nodeSize", node, requestObject);
+        return await request.post(options).catch(() => {
+            this.deadServers.add(node.value.ip);
+            this.ring.delete(node.value.ip);
+            return this.nodeSize(ip);
         });
     }
 
