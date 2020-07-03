@@ -11,6 +11,10 @@ function simulateTraffic() {
         console.log("1", data);
     });
 
+    cache.nodeSize("127.0.0.1").then(function (data) {
+        console.log("SIZE", data)
+    });
+
     // cache.put("Dublin", "Ireland").then(function (data) {
     //     console.log("2", data);
     // });
