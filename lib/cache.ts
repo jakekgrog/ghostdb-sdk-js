@@ -22,8 +22,8 @@ const API_ENDPOINTS: Record<string, string> = {
     'add': '/add',
     'delete': '/delete',
     'flush': '/flush',
-    'getSnitchMetrics': '/getSnitchMetrics',
-    'getWatchdogMetrics': '/getWatchdogMetrics',
+    'getSysMetrics': '/getSysMetrics',
+    'getAppMetrics': '/getAppMetrics',
     'nodeSize': '/nodeSize',
 };
 
@@ -198,7 +198,7 @@ class Cache {
      * @param {string[]} visitedNodes - The visited nodes
      * @return {Promise<RequsetPromise>} Promise response
      */
-    async getSnitchMetrics(metrics: any = null, visitedNodes: any = null): Promise<RequestPromise> {
+    async getSysMetrics(metrics: any = null, visitedNodes: any = null): Promise<RequestPromise> {
         if (_.isNil(metrics)) {
             metrics = [];
         }
@@ -212,13 +212,13 @@ class Cache {
             const pairNode: Pair = nodes[i].toPair();
             if (!visitedNodes.includes(nodes[i].ip)) {
                 const requestObject: CacheRequest = buildCacheRequestObj({});
-                const options = this._buildOptionsForRequest("getSnitchMetrics", pairNode, requestObject);
+                const options = this._buildOptionsForRequest("getSysMetrics", pairNode, requestObject);
                 await request.post(options).then((data: any) => {
                     metrics.push({ node: pairNode.value.ip, metrics: data });
                     visitedNodes.push(pairNode.value.ip);
                 }).catch((err: Error) => {
                     this.deadServers.add(pairNode.value.ip);
-                    return this.getSnitchMetrics(metrics, visitedNodes);
+                    return this.getSysMetrics(metrics, visitedNodes);
                 });
             }
         }
@@ -233,7 +233,7 @@ class Cache {
      * @param {stirng[]} visitedNodes - The visited nodes 
      * @return {Promise<RequsetPromise>} Promise response
      */
-    async getWatchdogMetrics(metrics: any = null, visitedNodes: any = null): Promise<RequestPromise> {
+    async getAppMetrics(metrics: any = null, visitedNodes: any = null): Promise<RequestPromise> {
         if (_.isNil(metrics)) {
             metrics = [];
         }
@@ -247,13 +247,13 @@ class Cache {
             const pairNode: Pair = nodes[i].toPair();
             if (!visitedNodes.includes(nodes[i].ip)) {
                 const requestObject: CacheRequest = buildCacheRequestObj({});
-                const options = this._buildOptionsForRequest("getWatchdogMetrics", pairNode, requestObject);
+                const options = this._buildOptionsForRequest("getAppMetrics", pairNode, requestObject);
                 await request.post(options).then((data: any) => {
                     metrics.push({ node: pairNode.value.ip, metrics: data });
                     visitedNodes.push(pairNode.value.ip);
                 }).catch((err: Error) => {
                     this.deadServers.add(pairNode.value.ip);
-                    return this.getWatchdogMetrics(metrics, visitedNodes);
+                    return this.getAppMetrics(metrics, visitedNodes);
                 });
             }
         }
