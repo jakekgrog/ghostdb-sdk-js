@@ -1,7 +1,7 @@
 import Cache from './cache';
 import * as path from 'path';
 
-//Absolute path required for testing
+// Absolute path required for testing
 var cache = new Cache(path.resolve(__dirname, 'ghostdb_test.conf'));
 
 setInterval(simulateTraffic, 2500)
@@ -11,9 +11,9 @@ function simulateTraffic() {
         console.log("1", data);
     });
 
-    cache.nodeSize("127.0.0.1").then(function (data) {
-        console.log("SIZE", data)
-    });
+    // cache.nodeSize("127.0.0.1").then(function (data) {
+    //     console.log("SIZE", data)
+    // });
 
     // cache.put("Dublin", "Ireland").then(function (data) {
     //     console.log("2", data);
@@ -46,13 +46,13 @@ function simulateTraffic() {
     // cache.add("Dublin", "Ireland").then(function (data) {
     //     console.log(data);
     // });
-    cache.getSnitchMetrics().then((data: any) => {
-        //console.log(data[0].metrics.Gobj);
-    });
-    cache.getWatchdogMetrics().then(data => {
-        //console.log(data[0].metrics.Gobj);
-    });
+    // cache.getSysMetrics().then((data: any) => {
+    //     //console.log(data[0].metrics.Gobj);
+    // });
+    // cache.getAppMetrics().then(data => {
+    //     console.log(data[0].metrics.Gobj);
+    // });
     cache.ping().then(data => {
-        console.log(data[0]);
+        //console.log(data[0]);
     });
 }

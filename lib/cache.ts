@@ -66,11 +66,8 @@ class Cache {
             throw new GhostNoMoreServersError();
         }
 
-        const requestObject: CacheRequest = buildCacheRequestObj({ key });
-        const options = this._buildOptionsForRequest("get", node, requestObject);
-        return await request.post(options).catch(() => {
-            this.deadServers.add(node.value.ip);
-            this.ring.delete(node.value.ip);
+        return await this._makeServiceRequest("get", node, { key }).catch(() => {
+            this._markDead(node);
             return this.get(key);
         });
     }
@@ -87,12 +84,9 @@ class Cache {
             throw new GhostNoMoreServersError();
         }
 
-        const requestObject: CacheRequest = buildCacheRequestObj({ ip });
-        const options = this._buildOptionsForRequest("nodeSize", node, requestObject);
-        return await request.post(options).catch(() => {
-            this.deadServers.add(node.value.ip);
-            this.ring.delete(node.value.ip);
-            return this.nodeSize(ip);
+        return await this._makeServiceRequest("nodeSize", node, { ip }).catch(() => {
+            this._markDead(node);
+            return this.get(ip);
         });
     }
 
@@ -106,16 +100,9 @@ class Cache {
      * @return {Promise<RequestPromise>} The promise.
      */
     async add(key: string, value: any, ttl: number = -1): Promise<RequestPromise> {
-        const node: Pair = this.ring.getPoint(key);
-        if (_.isNil(node)) {
-            throw new GhostNoMoreServersError();
-        }
-
-        const requestObject: CacheRequest = buildCacheRequestObj({ key, value, ttl });
-        const options = this._buildOptionsForRequest("add", node, requestObject);
-        return await request.post(options).catch(() => {
-            this.deadServers.add(node.value.ip);
-            this.ring.delete(node.value.ip);
+        const node: Pair = this._getNode(key);
+        return await this._makeServiceRequest("add", node, { key, value, ttl }).catch(() => {
+            this._markDead(node);
             return this.add(key, value, ttl);
         });
     }
@@ -131,16 +118,9 @@ class Cache {
      * @return {Promise<RequestPromise>} The promise.
      */
     async put(key: string, value: any, ttl: number = -1): Promise<RequestPromise> {
-        const node: Pair = this.ring.getPoint(key);
-        if (_.isNil(node)) {
-            throw new GhostNoMoreServersError();
-        }
-
-        const requestObject: CacheRequest = buildCacheRequestObj({ key, value, ttl });
-        const options = this._buildOptionsForRequest("put", node, requestObject);
-        return await request.post(options).catch(() => {
-            this.deadServers.add(node.value.ip);
-            this.ring.delete(node.value.ip);
+        const node: Pair = this._getNode(key);
+        return await this._makeServiceRequest("put", node, { key, value, ttl }).catch(() => {
+            this._markDead(node);
             return this.put(key, value, ttl);
         });
     }
@@ -152,16 +132,9 @@ class Cache {
      * @return {Promise<RequestPromise>} The promise.
      */
     async delete(key): Promise<RequestPromise> {
-        const node = this.ring.getPoint(key);
-        if (_.isNil(node)) {
-            throw new GhostNoMoreServersError();
-        }
-
-        const requestObject: CacheRequest = buildCacheRequestObj({ key });
-        const options = this._buildOptionsForRequest("delete", node, requestObject);
-        return await request.post(options).catch(() => {
-            this.deadServers.add(node.value.ip);
-            this.ring.delete(node.value.ip);
+        const node = this._getNode(key);
+        return await this._makeServiceRequest("delete", node, { key }).catch(() => {
+            this._markDead(node);
             return this.delete(key);
         });
     }
@@ -174,17 +147,11 @@ class Cache {
      * @return {Promise<RequestPromise>} The promise.
      */
     async flush(): Promise<RequestPromise> {
-        const nodes: VirtualPoint[] = this.ring.getPoints();
-        if (nodes.length == 0) {
-            throw new GhostNoMoreServersError();
-        }
-
+        const nodes: VirtualPoint[] = this._getNodes();
         nodes.forEach(node => {
             const pairNode = node.toPair();
-            const requestObject: CacheRequest = buildCacheRequestObj({});
-            const options = this._buildOptionsForRequest("flush", pairNode, requestObject);
-            return request.post(options).catch(() => {
-                this.deadServers.add(pairNode.value.ip);
+            return this._makeServiceRequest("flush", pairNode, {}).catch(() => {
+                this._markDead(pairNode);
                 return this.flush();
             });
         });
@@ -206,20 +173,19 @@ class Cache {
             visitedNodes = [];
         }
 
-        const nodes = this.ring.getPoints();
+        const nodes = this._getNodes();
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
             const pairNode: Pair = nodes[i].toPair();
-            if (!visitedNodes.includes(nodes[i].ip)) {
-                const requestObject: CacheRequest = buildCacheRequestObj({});
-                const options = this._buildOptionsForRequest("getSysMetrics", pairNode, requestObject);
-                await request.post(options).then((data: any) => {
-                    metrics.push({ node: pairNode.value.ip, metrics: data });
-                    visitedNodes.push(pairNode.value.ip);
-                }).catch((err: Error) => {
-                    this.deadServers.add(pairNode.value.ip);
-                    return this.getSysMetrics(metrics, visitedNodes);
-                });
+            if (!visitedNodes.includes(pairNode.value.ip)) {
+                await this._makeServiceRequest("getSysMetrics", pairNode, {})
+                    .then((data: any) => {
+                        metrics.push({ node: pairNode.value.ip, metrics: data });
+                        visitedNodes.push(pairNode.value.ip);
+                    }).catch((err: Error) => {
+                        this._markDead(pairNode);
+                        return this.getSysMetrics(metrics, visitedNodes);
+                    });
             }
         }
         return metrics;
@@ -241,20 +207,19 @@ class Cache {
             visitedNodes = [];
         }
 
-        const nodes = this.ring.getPoints();
+        const nodes = this._getNodes();
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
             const pairNode: Pair = nodes[i].toPair();
-            if (!visitedNodes.includes(nodes[i].ip)) {
-                const requestObject: CacheRequest = buildCacheRequestObj({});
-                const options = this._buildOptionsForRequest("getAppMetrics", pairNode, requestObject);
-                await request.post(options).then((data: any) => {
-                    metrics.push({ node: pairNode.value.ip, metrics: data });
-                    visitedNodes.push(pairNode.value.ip);
-                }).catch((err: Error) => {
-                    this.deadServers.add(pairNode.value.ip);
-                    return this.getAppMetrics(metrics, visitedNodes);
-                });
+            if (!visitedNodes.includes(pairNode.value.ip)) {
+                await this._makeServiceRequest("getAppMetrics", pairNode, {})
+                    .then((data: any) => {
+                        metrics.push({ node: pairNode.value.ip, metrics: data });
+                        visitedNodes.push(pairNode.value.ip);
+                    }).catch((err: Error) => {
+                        this._markDead(pairNode);
+                        return this.getAppMetrics(metrics, visitedNodes);
+                    });
             }
         }
         return metrics;
@@ -277,16 +242,14 @@ class Cache {
 
         const nodes = this.ring.getPoints();
 
-        for (var i = 0; i < nodes.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
             const pairNode: Pair = nodes[i].toPair();
-            if (!visitedNodes.includes(nodes[i].ip)) {
-                const requestObject: CacheRequest = buildCacheRequestObj({});
-                const options = this._buildOptionsForRequest("ping", pairNode, requestObject);
-                await request.post(options).then((data: any) => {
+            if (!visitedNodes.includes(pairNode.value.ip)) {
+                await this._makeServiceRequest("ping", pairNode, {}) .then((data: any) => {
                     liveNodes.push({ node: pairNode.value.ip, liveNodes: data });
                     visitedNodes.push(pairNode.value.ip);
                 }).catch((err: Error) => {
-                    this.deadServers.add(pairNode.value.ip);
+                    this._markDead(pairNode);
                     return this.ping(liveNodes, visitedNodes);
                 });
             }
@@ -298,7 +261,7 @@ class Cache {
      * Periodically polls nodes in the deadServer set. If it gets
      * a response, then it adds it back to the ring.
      */
-    _serverRevive() {
+    private _serverRevive() {
         for (let server of this.deadServers) {
             const options = {
                 method: "GET",
@@ -317,13 +280,40 @@ class Cache {
         }
     }
 
-    _buildOptionsForRequest(endpoint: string, node: Pair, requestObj: CacheRequest): any {
+    private _buildOptionsForRequest(endpoint: string, node: Pair, requestObj: CacheRequest): any {
         return {
             method: "POST",
             url: this.protocol + node.value.ip + ':' + this.port + API_ENDPOINTS[endpoint],
             json: true,
             body: requestObj.toJSON(),
         };
+    }
+
+    private _markDead(server: Pair) {
+        this.deadServers.add(server.value.ip);
+        this.ring.delete(server.value.ip);
+    }
+
+    private _getNode(key: string): Pair {
+        const node: Pair = this.ring.getPoint(key);
+        if (_.isNil(node)) {
+            throw new GhostNoMoreServersError();
+        }
+        return node;
+    }
+
+    private _getNodes(): VirtualPoint[] {
+        const nodes: VirtualPoint[] = this.ring.getPoints();
+        if (nodes.length == 0) {
+            throw new GhostNoMoreServersError();
+        }
+        return nodes;
+    }
+
+    private async _makeServiceRequest(requestType: string, server: Pair, params: any): Promise<RequestPromise> {
+        const requestObject: CacheRequest = buildCacheRequestObj(params);
+        const options = this._buildOptionsForRequest(requestType, server, requestObject);
+        return await request.post(options);
     }
 }
 
