@@ -9,16 +9,23 @@
   },
   "scripts": {
     "test-init": "./node_modules/jasmine/bin/jasmine.js init",
-    "test": "./node_modules/jasmine/bin/jasmine.js"
+    "test": "./node_modules/jasmine/bin/jasmine.js",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/request-promise": "^4.1.46",
     "crc-32": "^1.2.0",
     "jasmine": "^3.5.0",
     "lodash": "^4.17.15",
     "request": "^2.88.2",
     "request-promise": "^4.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.14",
+    "tslint": "^6.1.2",
+    "typescript": "^3.9.5"
   }
 }
